@@ -1,7 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
 import { Form, useActionData } from "react-router";
-import { ID, Account } from "node-appwrite";
-import { getAppwriteClient } from "~/lib/appwrite.server";
 import { data, redirect } from "react-router";
 
 type ActionData = {
@@ -35,15 +33,30 @@ export async function action({ request }: ActionFunctionArgs) {
     return data<ActionData>({ fieldErrors }, { status: 400 });
   }
 
+  const { createAdminAccountClient } = await import("~/lib/appwrite.server");
+  const { setAppwriteSessionCookie } = await import("~/lib/auth-cookie.server");
+
   try {
-    const client = getAppwriteClient();
-    const account = new Account(client);
+    const { account, ID } = createAdminAccountClient();
 
     // Appwrite: create(userId, email, password, name?)
-    await account.create(ID.unique(), email, password);
+    await account.create({
+      userId: ID.unique(), 
+      email, 
+      password
+    });
 
-    return redirect("/");
+    const session = await account.createEmailPasswordSession({ email, password });
+
+    const setCookieHeader = await setAppwriteSessionCookie(session.secret, session.expire);
+
+    return redirect("/", {
+      headers: {
+        "Set-Cookie": setCookieHeader,
+      },
+    });
   } catch (err: unknown) {
+    console.log(err);
     
     return data<ActionData>(
       { formError: "Signup failed. The email might already be in use." },
