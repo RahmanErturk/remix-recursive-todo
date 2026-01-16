@@ -1,8 +1,9 @@
 import type { Route } from "./+types/home";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
-import { useLoaderData, Form, data, redirect } from "react-router";
-import type { TodoRow } from "~/lib/todos.server";
-import { Welcome } from "~/welcome/welcome";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { data, redirect, useLoaderData } from "react-router";
+import { Form } from "react-router";
+import { TodoTree } from "~/components/TodoTree";
+import type { TodoView } from "~/lib/todos/todoTree";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -15,7 +16,7 @@ type UserView = { id: string; email: string };
 
 type LoaderData = {
   user: UserView | null;
-  todos: TodoRow[];
+  todos: TodoView[];
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -26,38 +27,85 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const { createSessionAccountClient } = await import("~/lib/appwrite.server");
-    
     const { account } = createSessionAccountClient(secret);
+    
     const me = await account.get();
     
-    const { listRootTodos } = await import("~/lib/todos.server");
-    const todos = await listRootTodos(me.$id, secret);
-    
+    const { listTodos } = await import("~/lib/todos.server");
+    const rows = await listTodos(me.$id, secret);
+
+    const todos: TodoView[] = rows.map((row: any) => ({
+      id: row.$id,
+      title: row.title,
+      completed: Boolean(row.completed),
+      parentId: row.parentId ?? null,
+    }));
+
     return data<LoaderData>({
       user: { id: me.$id, email: me.email },
       todos,
     });
   } catch {
+    // session expired / cookie invalid / unauthorized
     return data<LoaderData>({ user: null, todos: [] });
   }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const title = String(formData.get("title") ?? "").trim();
-
-  if (!title) return redirect("/");
+  const intent = String(formData.get("_intent") ?? "create");
 
   const { readAppwriteSessionSecret } = await import("~/lib/auth-cookie.server");
   const secret = await readAppwriteSessionSecret(request);
+
   if (!secret) return redirect("/signup");
 
-  const { createSessionAccountClient } = await import("~/lib/appwrite.server");
-  const { account } = createSessionAccountClient(secret);
-  const me = await account.get();
+  // Kullanıcıyı doğrula (userId lazım)
+  let userId: string;
+  try {
+    const { createSessionAccountClient } = await import("~/lib/appwrite.server");
+    const { account } = createSessionAccountClient(secret);
+    const me = await account.get();
+    userId = me.$id;
+  } catch {
+    return redirect("/signup");
+  }
 
-  const { createRootTodo } = await import("~/lib/todos.server");
-  await createRootTodo(me.$id, secret, title);
+  const { createTodo, setTodoCompleted, deleteTodo } = await import("~/lib/todos.server");
+
+  switch (intent) {
+    case "create": {
+      const title = String(formData.get("title") ?? "").trim();
+      const parentIdRaw = formData.get("parentId");
+      const parentId = parentIdRaw ? String(parentIdRaw) : null;
+
+      if (title) {
+        await createTodo(userId, secret, title, parentId);
+      }
+      break;
+    }
+
+    case "toggle": {
+      const id = String(formData.get("id") ?? "");
+      const completed = String(formData.get("completed") ?? "") === "1";
+
+      if (id) {
+        await setTodoCompleted(userId, secret, id, completed);
+      }
+      break;
+    }
+
+    case "delete": {
+      const id = String(formData.get("id") ?? "");
+      if (id) {
+        await deleteTodo(userId, secret, id);
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
 
   return redirect("/");
 }
@@ -68,7 +116,6 @@ export default function HomeRoute() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-6 py-10">
-        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -79,7 +126,6 @@ export default function HomeRoute() {
             </p>
           </div>
 
-          {/* Right-side badge */}
           <div
             className={[
               "rounded-full px-3 py-1 text-xs font-medium",
@@ -90,78 +136,36 @@ export default function HomeRoute() {
           </div>
         </div>
 
-        {/* Main card */}
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="p-6">
             {user ? (
               <>
-                {/* Create */}
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-base font-semibold text-gray-900">
-                      Your todos
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Add a task. Later we’ll support nested subtasks.
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Your todos</h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Add tasks and subtasks. Toggle complete, delete items.
+                  </p>
                 </div>
 
-                <Form method="post" className="mt-5 flex gap-2">
-                  <label className="sr-only" htmlFor="title">Title</label>
-                  <input
-                    name="title"
-                    placeholder="e.g. Build signup flow"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
-                  >
-                    Add
-                  </button>
-                </Form>
+                <div className="mt-5">
+                  <Form method="post" className="flex gap-2">
+                    <label className="sr-only" htmlFor="title">Title</label>
+                    <input
+                      name="title"
+                      placeholder="e.g. Build signup flow"
+                      className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                    >
+                      Add
+                    </button>
+                  </Form>
+                </div>
 
-                {/* List */}
                 <div className="mt-6">
-                  {todos.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
-                      <p className="text-sm font-medium text-gray-900">
-                        No todos yet
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Add your first task to get started.
-                      </p>
-                    </div>
-                  ) : (
-                    <ul className="divide-y divide-gray-100">
-                      {todos.map((t) => (
-                        <li key={t.$id} className="py-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-gray-900">
-                                {t.title}
-                              </p>
-                              <p className="mt-1 text-xs text-gray-500">
-                                Status: {t.completed ? "Completed" : "Open"}
-                              </p>
-                            </div>
-
-                            <div
-                              className={[
-                                "rounded-full px-2.5 py-1 text-xs font-medium",
-                                t.completed
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : "bg-gray-100 text-gray-700",
-                              ].join(" ")}
-                            >
-                              {t.completed ? "Done" : "Open"}
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <TodoTree todos={todos} />
                 </div>
               </>
             ) : (
@@ -185,9 +189,8 @@ export default function HomeRoute() {
           </div>
         </div>
 
-        {/* Footer hint */}
         <p className="mt-6 text-xs text-gray-500">
-          Next: nested subtasks, complete/delete actions, and tests.
+          Next: cascade delete (optional), optimistic UX, and UI tests.
         </p>
       </div>
     </div>
