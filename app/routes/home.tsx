@@ -126,14 +126,17 @@ export default function HomeRoute() {
             </p>
           </div>
 
-          <div
-            className={[
-              "rounded-full px-3 py-1 text-xs font-medium",
-              user ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-700",
-            ].join(" ")}
-          >
-            {user ? "Authenticated" : "Guest"}
-          </div>
+          {user ? (
+            <Form action="/logout" method="post">
+              <button
+                type="submit"
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
+              >
+                Logout
+              </button>
+            </Form>
+          ) : null}
+
         </div>
 
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -174,24 +177,28 @@ export default function HomeRoute() {
                   Sign in to manage todos
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Create an account to start saving your tasks.
-                </p>
-                <div className="mt-4">
+                  Log in to access your saved tasks, or create an account to get started.
+                </p>              
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <a
+                    href="/login"
+                    className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                  >
+                    Go to login
+                  </a>
+
                   <a
                     href="/signup"
-                    className="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                    className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100"
                   >
                     Go to signup
                   </a>
                 </div>
+
               </div>
             )}
           </div>
         </div>
-
-        <p className="mt-6 text-xs text-gray-500">
-          Next: cascade delete (optional), optimistic UX, and UI tests.
-        </p>
       </div>
     </div>
   );
