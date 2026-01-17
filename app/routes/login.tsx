@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { Form, useActionData, data, redirect } from "react-router";
+import { validateAuthCredentials } from "~/lib/validation";
 
 type ActionData = {
   fieldErrors?: {
@@ -14,9 +15,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  const fieldErrors: ActionData["fieldErrors"] = {};
-  if (!email) fieldErrors.email = "Email is required.";
-  if (!password) fieldErrors.password = "Password is required.";
+  const fieldErrors: ActionData["fieldErrors"] = validateAuthCredentials(email, password, "login");
 
   if (fieldErrors.email || fieldErrors.password) {
     return data<ActionData>({ fieldErrors }, { status: 400 });

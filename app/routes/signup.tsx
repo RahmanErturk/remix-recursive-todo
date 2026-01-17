@@ -1,12 +1,11 @@
 import type { ActionFunctionArgs } from "react-router";
 import { Form, useActionData } from "react-router";
 import { data, redirect } from "react-router";
+import type { FieldErrors } from "~/lib/validation";
+import { validateAuthCredentials } from "~/lib/validation";
 
 type ActionData = {
-  fieldErrors?: {
-    email?: string;
-    password?: string;
-  };
+  fieldErrors?: FieldErrors;
   formError?: string;
 };
 
@@ -21,13 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  const fieldErrors: ActionData["fieldErrors"] = {};
-
-  if (!email) fieldErrors.email = "Email is required.";
-  else if (!isValidEmail(email)) fieldErrors.email = "Email is not valid.";
-
-  if (!password) fieldErrors.password = "Password is required.";
-  else if (password.length < 8) fieldErrors.password = "Password must be at least 8 characters.";
+  const fieldErrors: ActionData["fieldErrors"] = validateAuthCredentials(email, password, "signup");
 
   if (fieldErrors.email || fieldErrors.password) {
     return data<ActionData>({ fieldErrors }, { status: 400 });
