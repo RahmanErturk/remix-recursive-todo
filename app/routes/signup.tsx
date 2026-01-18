@@ -62,56 +62,73 @@ export default function SignupRoute() {
   const actionData = useActionData<ActionData>();
 
   return (
-    <div className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-semibold">Sign up</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-md px-6 py-10">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+          Sign up
+        </h1>
 
-      <Form method="post" className="mt-6 space-y-4">
-        <div>
-          <label className="block text-sm font-medium" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-          {actionData?.fieldErrors?.email ? (
-            <p className="mt-1 text-sm text-red-600">{actionData.fieldErrors.email}</p>
-          ) : null}
+        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <Form method="post" className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-gray-100"
+              />
+              {actionData?.fieldErrors?.email ? (
+                <p className="mt-1 text-sm text-red-600">
+                  {actionData.fieldErrors.email}
+                </p>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-900" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-4 focus:ring-gray-100"
+              />
+              {actionData?.fieldErrors?.password ? (
+                <p className="mt-1 text-sm text-red-600">
+                  {actionData.fieldErrors.password}
+                </p>
+              ) : null}
+            </div>
+
+            {actionData?.formError ? (
+              <p className="text-sm text-red-600">{actionData.formError}</p>
+            ) : null}
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-200"
+            >
+              Create account
+            </button>
+          </Form>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-          {actionData?.fieldErrors?.password ? (
-            <p className="mt-1 text-sm text-red-600">{actionData.fieldErrors.password}</p>
-          ) : null}
-        </div>
-
-        {actionData?.formError ? (
-          <p className="text-sm text-red-600">{actionData.formError}</p>
-        ) : null}
-
-        <button
-          type="submit"
-          className="w-full rounded bg-black px-4 py-2 text-white"
-        >
-          Create account
-        </button>
-      </Form>
+        <p className="mt-4 text-sm text-gray-600">
+          Already have an account?{" "}
+          <a className="font-semibold text-gray-900 hover:underline" href="/login">
+            Log in
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
