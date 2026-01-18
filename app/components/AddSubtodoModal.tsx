@@ -21,10 +21,17 @@ export function AddSubtodoModal(props: {
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="subtask-modal-title"
+        className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-lg"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-base font-semibold text-gray-900">Add subtask</h3>
+            <h3 id="subtask-modal-title" className="text-base font-semibold text-gray-900">
+              Add subtask
+            </h3>
             <p className="mt-1 text-sm text-gray-600">
               Parent: <span className="font-medium text-gray-900">{parentTitle}</span>
             </p>
