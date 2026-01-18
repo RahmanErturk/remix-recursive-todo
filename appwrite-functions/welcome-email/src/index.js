@@ -6,23 +6,26 @@ function requireEnv(name) {
   return v;
 }
 
+function extractUserEmail(payload) {
+  // possible payload shapes
+  return (
+    payload?.email ||
+    payload?.user?.email ||
+    payload?.payload?.email ||
+    payload?.data?.email ||
+    null
+  );
+}
+
 export default async ({ req, res, log, error }) => {
   try {
     log("welcome-email triggered");
 
-    // Event payload
-    let payload = {};
-    try {
-      payload = JSON.parse(req.body || "{}");
-    } catch {
-      // ignore
-    }
+    // In Appwrite docs recommended to use req.bodyJson for JSON payloads
+    const payload = req.bodyJson ?? {};
 
-    // In Appwrite user create event payload, email is usually at payload.email
-    const email = payload.email;
-    const name = payload.name || payload.email || "there";
-
-    if (!email) {
+    const toEmail = extractUserEmail(payload);
+    if (!toEmail) {
       log(`No email found in payload. keys=${Object.keys(payload).join(",")}`);
       return res.json({ ok: true, skipped: true });
     }
@@ -42,12 +45,12 @@ export default async ({ req, res, log, error }) => {
 
     await transporter.sendMail({
       from,
-      to: email,
+      to: toEmail,
       subject: "Welcome to Recursive Todo",
       text: `Welcome!\n\nYour account is ready. You can now manage your todos.\n\n— Recursive Todo`,
     });
 
-    log(`Welcome email sent to ${email}`);
+    log(`Welcome email sent to ${toEmail}`);
     return res.json({ ok: true });
   } catch (e) {
     error(String(e));
