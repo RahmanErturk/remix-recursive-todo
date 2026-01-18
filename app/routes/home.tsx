@@ -71,7 +71,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return redirect("/signup");
   }
 
-  const { createTodo, setTodoCompleted, deleteTodo } = await import("~/lib/todos.server");
+  const { createTodo, deleteTodoCascade, setTodoCompletedCascade } = await import("~/lib/todos.server");
 
   switch (intent) {
     case "create": {
@@ -90,7 +90,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const completed = String(formData.get("completed") ?? "") === "1";
 
       if (id) {
-        await setTodoCompleted(userId, secret, id, completed);
+        await setTodoCompletedCascade(userId, secret, id, completed);
       }
       break;
     }
@@ -98,7 +98,7 @@ export async function action({ request }: ActionFunctionArgs) {
     case "delete": {
       const id = String(formData.get("id") ?? "");
       if (id) {
-        await deleteTodo(userId, secret, id);
+        await deleteTodoCascade(userId, secret, id);
       }
       break;
     }
