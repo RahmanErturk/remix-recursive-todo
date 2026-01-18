@@ -17,11 +17,11 @@ export function validatePassword(
 ): string | undefined {
   if (!password) return "Password is required.";
 
-  // Login'de şifre politikasını tekrar doğrulamaya gerek yok;
-  // kullanıcı zaten var olan şifresini girmeye çalışıyor.
+  // No need to re-validate password policy on login;
+  // the user is trying to enter their existing password.
   if (mode === "login") return undefined;
 
-  // Signup için Appwrite minimum 8 karakter ister.
+  // For signup, Appwrite requires minimum 8 characters.
   if (password.length < 8) return "Password must be at least 8 characters.";
 
   return undefined;

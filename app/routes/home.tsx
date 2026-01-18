@@ -60,7 +60,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (!secret) return redirect("/signup");
 
-  // Kullanıcıyı doğrula (userId lazım)
+  // Verify user (userId is needed)
   let userId: string;
   try {
     const { createSessionAccountClient } = await import("~/lib/appwrite.server");

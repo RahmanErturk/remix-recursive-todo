@@ -96,7 +96,7 @@ export async function setTodoCompletedCascade(
   rootRowId: string,
   completed: boolean
 ) {
-  // Senin istediğin davranış: sadece DONE olunca cascade
+  // Desired behavior: only cascade when marking as DONE
   if (!completed) {
     return setTodoCompleted(userId, sessionSecret, rootRowId, false);
   }
@@ -116,10 +116,10 @@ export async function deleteTodoCascade(
   sessionSecret: string,
   rootRowId: string
 ) {
-  const all = await listTodos(userId, sessionSecret); // $id + parentId içeriyor
+  const all = await listTodos(userId, sessionSecret); // contains $id + parentId
   const ids = collectSubtreeIds(all as any[], rootRowId);
 
-  // children önce silinsin diye ters sırayla
+  // Reverse order so children are deleted first
   ids.reverse();
 
   for (const id of ids) {
@@ -131,7 +131,7 @@ export async function deleteTodoCascade(
 
 type AnyRow = { $id: string; parentId?: string | null };
 
-// rootRowId dahil, tüm descendant $id'lerini döndürür
+// Returns all descendant $id's including rootRowId
 function collectSubtreeIds(rows: AnyRow[], rootRowId: string): string[] {
   const childrenByParent = new Map<string, string[]>();
 
