@@ -39,7 +39,8 @@ export default async ({ req, res, log, error }) => {
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
+      secure: false,
+      requireTLS: true, 
       auth: { user, pass },
     });
 
